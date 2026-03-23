@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Phantom Noise",
   "version": "1.0.0",
-  "description": "Privacy-enhancing decoy traffic generator. Pollutes your browsing profile with realistic noise to frustrate surveillance, data brokers, and ad-tech profiling.",
+  "description": "Decoy traffic generator. Floods your profile with realistic noise to frustrate ad-tech profiling.",
   "permissions": [
     "tabs",
     "storage",

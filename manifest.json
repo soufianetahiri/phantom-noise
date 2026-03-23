@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Phantom Noise",
+  "version": "1.0.0",
+  "description": "Privacy-enhancing decoy traffic generator. Pollutes your browsing profile with realistic noise to frustrate surveillance, data brokers, and ad-tech profiling.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "alarms",
+    "browsingData",
+    "webNavigation",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "incognito": "spanning",
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Phantom Noise",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

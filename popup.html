@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=420, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>Phantom Noise</title>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <!-- Ghost body -->
+          <path d="M12 3C8 3 5.5 6 5.5 9.5V17.5C5.5 17.8 5.8 18 6 17.8L7.5 16.5C7.8 16.2 8.2 16.2 8.5 16.5L10 17.8C10.3 18 10.7 18 11 17.8L12 17L13 17.8C13.3 18 13.7 18 14 17.8L15.5 16.5C15.8 16.2 16.2 16.2 16.5 16.5L18 17.8C18.2 18 18.5 17.8 18.5 17.5V9.5C18.5 6 16 3 12 3Z" fill="currentColor" opacity="0.9"/>
+          <!-- Eyes -->
+          <circle cx="9.5" cy="9" r="1.3" fill="var(--bg-primary, #0f1117)"/>
+          <circle cx="14.5" cy="9" r="1.3" fill="var(--bg-primary, #0f1117)"/>
+          <!-- Signal waves -->
+          <path d="M20 7.5C21 8.5 21 11.5 20 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <path d="M22 6C23.5 8 23.5 12 22 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+          <path d="M4 7.5C3 8.5 3 11.5 4 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+          <path d="M2 6C0.5 8 0.5 12 2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="title">Phantom Noise</h1>
+        <span class="subtitle" id="status-text">Stopped</span>
+      </div>
+    </div>
+    <button class="power-btn" id="power-btn" title="Start / Stop">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="2" x2="12" y2="12"/>
+        <path d="M16.24 7.76a8 8 0 1 1-8.48 0"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Tab Bar -->
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="status">Status</button>
+    <button class="tab" data-tab="log">Log</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- Status Panel -->
+  <section class="panel active" id="panel-status">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Intensity</span>
+        <span class="badge" id="intensity-badge">Medium</span>
+      </div>
+      <div class="intensity-bar">
+        <button class="intensity-btn" data-level="low">Low</button>
+        <button class="intensity-btn active" data-level="med">Med</button>
+        <button class="intensity-btn" data-level="high">High</button>
+        <button class="intensity-btn" data-level="max">Max</button>
+      </div>
+      <p class="intensity-desc" id="intensity-desc">Moderate noise (~60/hr). Good default for daily use.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Session</span>
+        <span class="card-meta" id="session-uptime">0m</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value" id="stat-searches">0</span><span class="stat-label">Searches</span></div>
+        <div class="stat"><span class="stat-value" id="stat-visits">0</span><span class="stat-label">Page Visits</span></div>
+        <div class="stat"><span class="stat-value" id="stat-adclicks">0</span><span class="stat-label">Ad Sites</span></div>
+        <div class="stat"><span class="stat-value" id="stat-tabs">0</span><span class="stat-label">Active Tabs</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">All Time</span></div>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-value" id="alltime-searches">0</span><span class="stat-label">Searches</span></div>
+        <div class="stat"><span class="stat-value" id="alltime-visits">0</span><span class="stat-label">Page Visits</span></div>
+        <div class="stat"><span class="stat-value" id="alltime-adclicks">0</span><span class="stat-label">Ad Sites</span></div>
+        <div class="stat"><span class="stat-value" id="alltime-bandwidth">0 KB</span><span class="stat-label">Bandwidth</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Bandwidth</span>
+        <span class="card-meta">Last 60 minutes</span>
+      </div>
+      <canvas id="bandwidth-chart" width="380" height="80"></canvas>
+    </div>
+  </section>
+
+  <!-- Log Panel -->
+  <section class="panel" id="panel-log">
+    <div class="log-toolbar">
+      <div class="log-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="search">Search</button>
+        <button class="filter-btn" data-filter="visit">Visit</button>
+        <button class="filter-btn" data-filter="adclick">Ad</button>
+        <button class="filter-btn" data-filter="interaction">Action</button>
+        <button class="filter-btn" data-filter="system">System</button>
+      </div>
+      <div class="log-actions">
+        <button class="icon-btn" id="export-logs" title="Export logs as JSON">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="clear-logs" title="Clear logs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="log-feed" id="log-feed">
+      <div class="log-empty">No activity yet. Start the engine to begin generating noise.</div>
+    </div>
+  </section>
+
+  <!-- Settings Panel -->
+  <section class="panel" id="panel-settings">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Privacy Mode</span></div>
+      <div class="incognito-status" id="incognito-status"></div>
+      <label class="toggle-row">
+        <span>Use Incognito Windows</span>
+        <input type="checkbox" id="setting-incognito" checked>
+        <span class="toggle-switch"></span>
+      </label>
+      <p class="setting-hint">Opens decoy tabs in a private incognito window so they never touch your real browsing profile (history, cookies, cache).</p>
+      <div class="setting-help" id="incognito-help">
+        <strong>How to enable incognito access:</strong>
+        <ol>
+          <li>Open <code>chrome://extensions</code> in your browser</li>
+          <li>Find <em>Phantom Noise</em> and click <strong>Details</strong></li>
+          <li>Toggle <strong>"Allow in Incognito"</strong> on</li>
+        </ol>
+        <p>Without this, the extension falls back to a hidden minimized window with automatic cleanup — still private, but incognito is stronger.</p>
+      </div>
+      <label class="toggle-row">
+        <span>Clean Up After Close</span>
+        <input type="checkbox" id="setting-cleanup" checked>
+        <span class="toggle-switch"></span>
+      </label>
+      <p class="setting-hint">Removes cookies, cache, and history for visited decoy sites after each tab closes. Automatically active when incognito is unavailable.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Active Hours</span></div>
+      <label class="toggle-row">
+        <span>Enable Schedule</span>
+        <input type="checkbox" id="setting-schedule-enabled">
+        <span class="toggle-switch"></span>
+      </label>
+      <div class="schedule-row" id="schedule-times">
+        <label class="time-input">
+          <span>Start</span>
+          <input type="number" id="setting-start-hour" min="0" max="23" value="8">
+          <span>:00</span>
+        </label>
+        <span class="schedule-dash">—</span>
+        <label class="time-input">
+          <span>End</span>
+          <input type="number" id="setting-end-hour" min="0" max="23" value="22">
+          <span>:00</span>
+        </label>
+      </div>
+      <p class="setting-hint">Only generate noise during these hours.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Search Engines</span></div>
+      <div id="search-engine-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Task Mix</span></div>
+      <div class="slider-group">
+        <label class="slider-row"><span>Searches</span><input type="range" id="mix-search" min="0" max="100" value="40"><span class="slider-value" id="mix-search-val">40%</span></label>
+        <label class="slider-row"><span>Page Visits</span><input type="range" id="mix-browse" min="0" max="100" value="45"><span class="slider-value" id="mix-browse-val">45%</span></label>
+        <label class="slider-row"><span>Ad Sites</span><input type="range" id="mix-adsite" min="0" max="100" value="15"><span class="slider-value" id="mix-adsite-val">15%</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Site Categories</span>
+        <button class="text-btn" id="toggle-all-cats">Toggle All</button>
+      </div>
+      <div id="category-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Tab Behavior</span></div>
+      <label class="slider-row"><span>Max Lifetime</span><input type="range" id="setting-max-lifetime" min="10" max="120" value="45"><span class="slider-value" id="max-lifetime-val">45s</span></label>
+      <label class="slider-row"><span>Min Lifetime</span><input type="range" id="setting-min-lifetime" min="3" max="30" value="8"><span class="slider-value" id="min-lifetime-val">8s</span></label>
+    </div>
+
+    <div class="card">
+      <button class="danger-btn" id="reset-stats">Reset All-Time Stats</button>
+      <button class="secondary-btn" id="reset-settings">Reset to Defaults</button>
+    </div>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

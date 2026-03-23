@@ -24,10 +24,11 @@ Each decoy tab simulates realistic browsing:
 - **Text selection** to mimic reading behavior
 - All timing is randomized per intensity level
 
-### Privacy Mode
-- **Incognito windows**: All decoy tabs open in a minimized incognito window so your real browsing profile stays completely clean — no history, cookies, or cache pollution
-- **Hidden window fallback**: If incognito isn't available, a minimized regular window is created so tabs never appear in your active browser window
-- **Automatic cleanup fallback**: When not in incognito, the extension removes cookies, cache, history, localStorage, and service workers for each visited origin after the tab closes
+### Privacy Mode — Fully Invisible Operation
+- **Zero visible tabs**: All decoy activity happens in a completely invisible window — created off-screen (`left: -32000, top: -32000`), force-minimized on creation, and auto-re-minimized if it ever surfaces (via `onFocusChanged` listener). You will never see a tab flash, a window appear, or anything in your taskbar.
+- **Triple-layer invisibility**: (1) off-screen positioning, (2) immediate `buryWindow()` after creation and after every new tab, (3) focus listener that re-minimizes instantly if the window is ever activated
+- **Incognito preferred**: When available, decoy tabs run in an invisible incognito window for full profile isolation — no history, cookies, or cache pollution
+- **Hidden window fallback**: If incognito isn't enabled, a regular window is used with the same invisibility guarantees plus automatic cleanup of cookies, cache, history, localStorage, and service workers after each tab closes
 - **No data exfiltration**: Everything runs locally in your browser. Zero network calls to external servers.
 
 ### 4 Intensity Levels
@@ -188,7 +189,7 @@ phantom-noise/
 
 3. **Weighted selection**: Search engines and task types use weighted random selection, so you can bias toward DuckDuckGo over Google, or favor page visits over searches, while still maintaining randomness.
 
-4. **Tab lifecycle**: Each tab opens in a hidden minimized window (incognito if available, regular otherwise). The page loads, the behavior simulation script runs, then the tab closes after a random lifetime (configurable, default 8–45 seconds). If incognito mode is active, isolation is automatic. If not, browsing data for that origin is purged after close.
+4. **Tab lifecycle — fully invisible**: Each tab opens in a completely hidden window (positioned at -32000,-32000 off-screen, force-minimized, and auto-re-minimized on focus). The window is created once and reused. Every time a tab is added, the window is re-buried. A `chrome.windows.onFocusChanged` listener ensures the window is instantly minimized if it ever surfaces. The page loads, the behavior simulation script runs, then the tab closes after a random lifetime (configurable, default 8–45 seconds). If incognito mode is active, isolation is automatic. If not, browsing data for that origin is purged after close.
 
 5. **Behavior simulation**: The content script runs a shuffled sequence of scroll/hover/click/select actions. Mouse movements follow quadratic Bézier curves. Scrolling uses easeInOut timing. All durations and pauses are randomized within intensity-dependent ranges.
 

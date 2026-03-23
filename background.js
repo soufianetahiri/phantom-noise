@@ -386,13 +386,23 @@ async function loadState() {
 
 // ─── Tab Management ─────────────────────────────────────────────────────────
 
+// Force a window to stay minimized
+async function buryWindow(windowId) {
+  try {
+    await chrome.windows.update(windowId, { state: 'minimized' });
+  } catch { /* window may already be gone */ }
+}
+
 async function getOrCreateHiddenWindow() {
   // Try incognito first if enabled
   if (state.settings.useIncognito) {
     if (state.incognitoWindowId) {
       try {
         const win = await chrome.windows.get(state.incognitoWindowId);
-        if (win) return state.incognitoWindowId;
+        if (win) {
+          await buryWindow(state.incognitoWindowId);
+          return state.incognitoWindowId;
+        }
       } catch {
         state.incognitoWindowId = null;
       }
@@ -406,11 +416,12 @@ async function getOrCreateHiddenWindow() {
         url: 'about:blank'
       });
       state.incognitoWindowId = win.id;
-      addLog('system', { message: 'Opened private browsing window', windowId: win.id });
+      await buryWindow(win.id);
+      addLog('system', { message: 'Opened hidden incognito window', windowId: win.id });
       return win.id;
     } catch (e) {
       addLog('system', {
-        message: 'Incognito unavailable — falling back to hidden minimized window',
+        message: 'Incognito unavailable — falling back to hidden window',
         detail: e.message
       });
       state.settings.useIncognito = false;
@@ -418,11 +429,14 @@ async function getOrCreateHiddenWindow() {
     }
   }
 
-  // Fallback: use a minimized regular window so tabs don't appear in the user's window
+  // Fallback: hidden regular window
   if (state.hiddenWindowId) {
     try {
       const win = await chrome.windows.get(state.hiddenWindowId);
-      if (win) return state.hiddenWindowId;
+      if (win) {
+        await buryWindow(state.hiddenWindowId);
+        return state.hiddenWindowId;
+      }
     } catch {
       state.hiddenWindowId = null;
     }
@@ -435,7 +449,8 @@ async function getOrCreateHiddenWindow() {
       url: 'about:blank'
     });
     state.hiddenWindowId = win.id;
-    addLog('system', { message: 'Opened hidden minimized window for tabs', windowId: win.id });
+    await buryWindow(win.id);
+    addLog('system', { message: 'Opened hidden window for tabs', windowId: win.id });
     return win.id;
   } catch (e) {
     addLog('error', { message: 'Failed to create hidden window', detail: e.message });
@@ -455,6 +470,8 @@ async function openTab(url, taskType) {
     }
 
     const tab = await chrome.tabs.create(tabOptions);
+    // Re-bury the window — creating a tab can sometimes restore it
+    await buryWindow(tabOptions.windowId);
     state.activeTabs.set(tab.id, {
       url,
       taskType,
@@ -730,6 +747,15 @@ chrome.windows.onRemoved.addListener((windowId) => {
   } else if (windowId === state.hiddenWindowId) {
     state.hiddenWindowId = null;
     for (const [tabId] of state.activeTabs) state.activeTabs.delete(tabId);
+  }
+});
+
+// If the hidden window ever gets focused (user clicks taskbar, Alt-Tab, etc.)
+// immediately re-minimize it so it stays invisible
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  if (windowId === state.incognitoWindowId || windowId === state.hiddenWindowId) {
+    await buryWindow(windowId);
   }
 });
 
